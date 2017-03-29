@@ -1,5 +1,5 @@
 theory POLocales
-imports EventStructures
+imports Main
 begin
 (*see notebook for extended notes*)
 
@@ -62,13 +62,53 @@ locale lattice = partial_order +
     and ex_sup: "\<exists>sup. is_sup x y sup"
     begin
       
+      (*THE: Definite description operator -
+        denotes x such that P(x) \<rightarrow> T provided unique x*)
       definition meet (infixl "\<sqinter>" 70) where
         "x \<sqinter> y = (THE inf. is_inf x y inf)"
 
       definition join (infixl "\<squnion>" 65) where
         "x \<squnion> y = (THE sup. is_sup x y sup)"
 
+      lemma meet_left:"x \<sqinter> y \<sqsubseteq> x"
+      apply(simp add: meet_def)
+      apply(simp add: is_inf_def)
+      apply(rule theI)
+      sorry
+      
     end
 
+locale total_order = partial_order +
+  assumes total: "x \<sqsubseteq> y \<or> y \<sqsubseteq> x"
+
+lemma (in total_order) less_total: 
+  "x \<sqsubset> y \<or> x = y \<or> y \<sqsubset> x"
+using less_def total by auto
+
+
+(*distributive lattice*)  
+locale distrib_lattice = lattice +
+  assumes meet_distr: "x \<sqinter> (y \<squnion> z) = x \<sqinter> y \<squnion> x \<sqinter> z"
+
+lemma (in distrib_lattice) join_distr:
+  "x \<squnion> (y \<sqinter> z) = (x \<squnion> y) \<sqinter> (x \<squnion> z)"
+  apply(auto simp add: meet_distr meet_left)
+  apply(simp add: join_def meet_def is_inf_def)
+  apply(rule theI)
+  sorry
+
+(*sublocale x \<subseteq> y causes locale y to be interpreted in context of x
+ conclusions of y are made available in x. Must prove that this is so*)
+sublocale total_order \<subseteq> lattice
+proof unfold_locales
+(*since both extend lattices, only assumptions introduced in lattice remain as subgoals*)
+fix x y
+from total have "is_inf x y (if x \<sqsubseteq> y then x else y)"
+  by (auto simp: is_inf_def)
+then show "\<exists>inf. is_inf x y inf"
+from total have "is_sup x y (if y \<sqsubseteq> x then y else x)"
+  by (auto simp: is_sup_def)
+then show "\<exists>sup. is_sup x y sup"
+sorry
 
 end
